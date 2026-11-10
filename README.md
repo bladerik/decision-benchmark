@@ -13,16 +13,15 @@ Z videa CodingFry: **Šampión medzi AI, o ktorom si ešte nepočul**.
 
 ## Inštalácia
 
-Claude Code:
+Jedným príkazom pre Claude Code, Codex, Cursor, Gemini CLI, Cline a ďalších agentov:
 
 ```sh
-git clone https://github.com/bladerik/decision-benchmark /tmp/decision-benchmark
-cp -r /tmp/decision-benchmark/decision-benchmark ~/.claude/skills/
+npx skills add bladerik/decision-benchmark
 ```
 
-Potom v novom chate napíš: „Chcem otestovať decision modely na mojej úlohe.“
+Alebo to nechaj na agentovi. Napíš mu: „Nainštaluj si skill z https://github.com/bladerik/decision-benchmark“.
 
-Iný agent: priečinok `decision-benchmark/` daj tam, kde tvoj agent hľadá skilly, alebo mu povedz, nech si prečíta `decision-benchmark/SKILL.md`.
+Potom v novom chate napíš: „Chcem otestovať decision modely na mojej úlohe.“
 
 ## Čo potrebuješ
 

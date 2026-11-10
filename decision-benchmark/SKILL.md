@@ -1,6 +1,6 @@
 ---
 name: decision-benchmark
-description: Decide whether a decision model (Jev, GPT Luna Decisions, Perplexity Decider and the other OpenRouter models that return a typed answer with a probability instead of text) fits a task, then benchmark every live one on the user's own labelled sample and recommend a model, a confidence threshold and a fallback. Use when someone considers a decision model, wants to automate a yes/no check, classification, triage or routing step, or asks which decision model is best for their case.
+description: Decision models (Jev, GPT Luna Decisions, Drex, Clef and the other OpenRouter models that answer with a typed choice and a probability instead of text) - decide whether one fits a task, benchmark every live one on the user's own labelled sample, and recommend a model, a confidence threshold and a fallback. Use when someone considers a decision model, wants to automate a yes/no check, classification or routing step, or asks which decision model suits their case.
 ---
 
 # Decision benchmark
@@ -11,11 +11,11 @@ Talk with the user in their language (often Slovak or Czech); keep the type name
 
 ## 1. Find the need
 
-Open with "What are you considering a decision model for?" in the user's language. Expect a vague answer. Ask about the process around it, and research their domain or tools when that helps, until you know: what comes in (text, image, both), which answer comes out, how many items a day, what happens next with the answer, and what a wrong answer costs.
+Open with "What are you considering a decision model for?" in the user's language. Expect a vague answer. Ask about the process around it, and research their domain or tools when that helps, until you know: what comes in (text, image, both), which answer comes out, how many items a day, what happens next with the answer, what a wrong answer costs, and whether the items are sensitive (client data, contracts, health, finance, anything under NDA).
 
-Done when the user confirms your one-sentence restatement: "For each <input>, decide <answer from a fixed set>, then <next step>."
+The benchmark sends the sample through OpenRouter to several model providers. For sensitive items, say so plainly and let the user choose: anonymise the sample with placeholders, test only open-weight models they can run locally, or stop here.
 
-Ask early whether the items are sensitive (client data, contracts, health, finance, anything under NDA). The benchmark sends them through OpenRouter to several model providers. For sensitive data, say so plainly and offer three ways: anonymise the sample with placeholders, test only open-weight models the user can run locally, or skip the benchmark. Continue only with the user's informed choice.
+Done when the user confirms your one-sentence restatement ("For each <input>, decide <answer from a fixed set>, then <next step>.") and has chosen how to handle sensitive data.
 
 ## 2. Fit verdict
 
@@ -53,7 +53,7 @@ Show the questions to the user. Done when the user approves every one.
 
 ## 4. Labelled sample
 
-Help the user gather 50 to 100 items whose right answer they already know: hand-sorted history, a folder per category, a spreadsheet column. Mix in borderline cases in roughly real proportions, with at least ~10 items for each answer. When labels are missing, propose labels and let the user confirm or correct each; the user's answer is the gold label. Images must be PNG or JPEG, 256 to 1568 px per side, ideally under 300 KB (resize with whatever is installed: `sips -Z 1024` on macOS, ImageMagick, Pillow). The items travel to model providers through OpenRouter, so replace personal data with placeholders first.
+Help the user gather 50 to 100 items whose right answer they already know: hand-sorted history, a folder per category, a spreadsheet column. Mix in borderline cases in roughly real proportions, with at least ~10 items for each answer. When labels are missing, propose labels and let the user confirm or correct each; the user's answer is the gold label. Images must be PNG or JPEG, 256 to 1568 px per side, ideally under 300 KB (resize with whatever is installed: `sips -Z 1024` on macOS, ImageMagick, Pillow). Apply the data choice from step 1.
 
 Write `items.jsonl` or `items.csv` ([references/formats.md](references/formats.md)). Done when `plan` (step 6) reports no problems.
 
@@ -61,7 +61,7 @@ Write `items.jsonl` or `items.csv` ([references/formats.md](references/formats.m
 
 The script calls OpenRouter's Decisions API. The user needs an OpenRouter account with a few euros of credit (https://openrouter.ai/settings/credits; the benchmark itself usually costs cents) and a key from https://openrouter.ai/settings/keys. Another gateway works only if it serves the same Decisions API.
 
-The key lives only in the environment variable `OPENROUTER_API_KEY`, set by the user in their terminal before starting the agent from that terminal: `export OPENROUTER_API_KEY=...` (macOS, Linux) or `$env:OPENROUTER_API_KEY="..."` (PowerShell). Keep it out of files and out of the chat. Check with `python3 <skill>/scripts/bench.py models`: it lists the live decision models and shows whether the key is set and the remaining credit.
+The key lives only in the environment variable `OPENROUTER_API_KEY`, which the user sets in their own terminal before starting the agent from it: `export OPENROUTER_API_KEY=...` (macOS, Linux) or `$env:OPENROUTER_API_KEY="..."` (PowerShell). Check with `python3 <skill>/scripts/bench.py models`: it lists the live decision models and shows whether the key is set and the remaining credit.
 
 ## 6. Run the benchmark
 
@@ -84,5 +84,3 @@ Show the main table from `results.md`: accuracy, accuracy and coverage at confid
 - **The threshold:** ask what accuracy the case needs and read it from the report's threshold section (`bench.py report results.json --target 0.98` recomputes it).
 - **The fallback:** where items below the threshold go, a frontier LLM or agent, or a human, and what share that is (1 − coverage).
 - **Local option:** when an open-weights model is close to the best, say it can run locally from its Hugging Face weights, so the data never leaves the user's machine. That setup is worth it now that the benchmark has shown the model works for their case.
-
-End with one line asking the user to share in the comments under the video which model won for their use case.
