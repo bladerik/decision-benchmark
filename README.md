@@ -2,7 +2,7 @@
 
 Skill pre AI agenta (Claude Code, Codex a ďalšie, ktoré čítajú `SKILL.md`). Zistí, či sa na tvoju úlohu hodí **decision model** (Jev, GPT Luna Decisions, Perplexity Decider, Drex, Clef…), a ak áno, otestuje všetky naraz na tvojej vlastnej, ručne zaradenej vzorke.
 
-Z videa CodingFry: **Šampión medzi AI, o ktorom si ešte nepočul**.
+Z videa CodingFry: **Je Jev šampión medzi decision modelmi?**
 
 ## Čo urobí
 
