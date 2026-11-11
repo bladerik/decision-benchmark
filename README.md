@@ -26,6 +26,7 @@ Potom v novom chate napíš: „Chcem otestovať decision modely na mojej úlohe
 ## Čo potrebuješ
 
 - Python 3 (bez ďalších balíčkov).
+- Node.js, ak inštaluješ cez `npx`. Bez neho stačí skopírovať priečinok `decision-benchmark/` medzi skilly svojho agenta.
 - Účet na [OpenRouteri](https://openrouter.ai) s pár eurami kreditu. Samotný test väčšinou stojí pár centov.
 - API kľúč v premennej prostredia `OPENROUTER_API_KEY`. Nevkladaj ho do chatu ani do súborov.
 

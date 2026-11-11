@@ -7,13 +7,13 @@ description: Decision models (Jev, GPT Luna Decisions, Drex, Clef and the other 
 
 A decision model reads a state (text, JSON, images) and answers typed questions: a yes/no probability, one of fixed options, a level on a scale, or a box in an image. It returns no text, answers in under a second and costs fractions of a cent. It fits only some decisions. This skill finds out whether it fits the user's case and, if so, which model wins on their own data.
 
-Talk with the user in their language (often Slovak or Czech); keep the type names noul, choice, score and box as they are. Ask one question at a time. Keep the user's files in a new folder `decision-benchmark-<task>/` in the current directory. `<skill>` below is this skill's folder.
+Ask one question at a time; keep the type names noul, choice, score and box untranslated. Create a folder `decision-benchmark-<task>/` in the current directory, keep the user's files there and run every command below from it. `<skill>` below is this skill's folder; where `python3` is missing (often on Windows), use `py` or `python`.
 
 ## 1. Find the need
 
-Open with "What are you considering a decision model for?" in the user's language. Expect a vague answer. Ask about the process around it, and research their domain or tools when that helps, until you know: what comes in (text, image, both), which answer comes out, how many items a day, what happens next with the answer, what a wrong answer costs, and whether the items are sensitive (client data, contracts, health, finance, anything under NDA).
+Open with "What are you considering a decision model for?" Expect a vague answer. Ask about the process around it, and research their domain or tools when that helps, until you know: what comes in (text, image, both), which answer comes out, how many items a day, what happens next with the answer, what a wrong answer costs, and whether the items are sensitive (client data, contracts, health, finance, anything under NDA).
 
-The benchmark sends the sample through OpenRouter to several model providers. For sensitive items, say so plainly and let the user choose: anonymise the sample with placeholders, test only open-weight models they can run locally, or stop here.
+The benchmark sends the sample through OpenRouter to several model providers. For sensitive items, say so plainly and let the user choose: anonymise the sample with placeholders, or stop here.
 
 Done when the user confirms your one-sentence restatement ("For each <input>, decide <answer from a fixed set>, then <next step>.") and has chosen how to handle sensitive data.
 
@@ -53,7 +53,7 @@ Show the questions to the user. Done when the user approves every one.
 
 ## 4. Labelled sample
 
-Help the user gather 50 to 100 items whose right answer they already know: hand-sorted history, a folder per category, a spreadsheet column. Mix in borderline cases in roughly real proportions, with at least ~10 items for each answer. When labels are missing, propose labels and let the user confirm or correct each; the user's answer is the gold label. Images must be PNG or JPEG, 256 to 1568 px per side, ideally under 300 KB (resize with whatever is installed: `sips -Z 1024` on macOS, ImageMagick, Pillow). Apply the data choice from step 1.
+Help the user gather 50 to 100 items whose right answer they already know: hand-sorted history, a folder per category, a spreadsheet column. Mix in borderline cases in roughly real proportions, with at least ~10 items for each answer. When labels are missing, propose labels and let the user confirm or correct each; the user's answer is the gold label. Images must be PNG or JPEG, 256 to 1568 px per side; Jev also needs at least 78,400 pixels per image (about 280×280), so aim for ~512 px or more on the short side; ideally under 300 KB (resize with whatever is installed: `sips -Z 1024` on macOS, ImageMagick, Pillow). Apply the data choice from step 1.
 
 Write `items.jsonl` or `items.csv` ([references/formats.md](references/formats.md)). Done when `plan` (step 6) reports no problems.
 
@@ -61,7 +61,7 @@ Write `items.jsonl` or `items.csv` ([references/formats.md](references/formats.m
 
 The script calls OpenRouter's Decisions API. The user needs an OpenRouter account with a few euros of credit (https://openrouter.ai/settings/credits; the benchmark itself usually costs cents) and a key from https://openrouter.ai/settings/keys. Another gateway works only if it serves the same Decisions API.
 
-The key lives only in the environment variable `OPENROUTER_API_KEY`, which the user sets in their own terminal before starting the agent from it: `export OPENROUTER_API_KEY=...` (macOS, Linux) or `$env:OPENROUTER_API_KEY="..."` (PowerShell). Check with `python3 <skill>/scripts/bench.py models`: it lists the live decision models and shows whether the key is set and the remaining credit.
+The key lives only in the environment variable `OPENROUTER_API_KEY`, which the user sets in their own terminal before starting the agent from it: `export OPENROUTER_API_KEY=...` (macOS, Linux) or `$env:OPENROUTER_API_KEY="..."` (PowerShell). Check with `python3 <skill>/scripts/bench.py models`: it lists the live decision models and shows whether the key is set and the remaining credit. The script needs network access and that variable in your shell; when it reports the key missing or cannot reach openrouter.ai although the user set it, ask the user to allow network access for this command or to pass the variable into your sandbox (in Codex: `shell_environment_policy`).
 
 ## 6. Run the benchmark
 
@@ -70,17 +70,17 @@ python3 <skill>/scripts/bench.py plan questions.json items.jsonl --baseline <llm
 python3 <skill>/scripts/bench.py run  questions.json items.jsonl --baseline <llm-id> --max-usd 0.50
 ```
 
-`plan` validates the files, fetches the live decision-model list, keeps every model that accepts the inputs, and estimates the cost without sending anything. For `--baseline` pick one cheap current chat model with structured outputs (and image input when items have images) from https://openrouter.ai/models, so the user sees what a normal LLM does on the same questions. Show the plan and the estimate, and run after the user agrees. `run` makes 2 passes (stability), 4 requests at a time, stops at the `--max-usd` cap, and resumes from `results.json` if interrupted. `python3 <skill>/scripts/bench.py --help` lists the remaining options.
+`plan` validates the files, fetches the live decision-model list, keeps every model that accepts the inputs, and estimates the cost without sending anything. For `--baseline` pick one cheap current chat model with structured outputs (and image input when items have images) from https://openrouter.ai/models, so the user sees what a normal LLM does on the same questions. Show the plan and the estimate, and run after the user agrees. `run` makes 2 passes (stability), 4 requests at a time, saves `results.json` as it goes and on exit or interrupt, stops at the `--max-usd` cap, and continues from `results.json` when started again with the same files. The cap counts all spend in that results file, so finishing a capped run needs a higher `--max-usd`. When the questions or items change, it asks for a new `--out`. The cap reserves a cautious estimate per request, so a run may stop a little early; for a hard limit the user sets a credit limit on the key at https://openrouter.ai/settings/keys. `python3 <skill>/scripts/bench.py --help` lists the remaining options.
 
 When the report lists "Items most models got wrong", check those labels and question wordings with the user; after a fix, rerun with `--out results-v2.json`.
 
-Done when `results.md` exists and every failing model fails for a reason you have named (the "Errors" section).
+Done when `results.md` reports a complete run (every planned request answered or failed) and every failing model fails for a reason you have named (the "Errors" section). A partial run (cap hit, interrupted) gets finished first, by rerunning with a higher cap or after the interruption.
 
 ## 7. Report and recommend
 
 Show the main table from `results.md`: accuracy, accuracy and coverage at confidence ≥ 0.9 and ≥ 0.8, median latency, cost per 1 000 items, stability between passes, open weights. Then recommend, in a few sentences:
 
 - **The model:** accuracy first, then cost and speed. A model that changes its answers between passes is a risk.
-- **The threshold:** ask what accuracy the case needs and read it from the report's threshold section (`bench.py report results.json --target 0.98` recomputes it).
-- **The fallback:** where items below the threshold go, a frontier LLM or agent, or a human, and what share that is (1 − coverage).
+- **The threshold:** ask what accuracy the case needs and read it from the report's threshold section (`bench.py report results.json --target 0.98` recomputes it). Check each question's own accuracy: a question far below the rest needs better wording or a fallback of its own. The threshold is tuned on this sample, so call it an estimate, and suggest checking it on 20 to 30 fresh items before relying on it.
+- **The fallback:** where items below the threshold go, a frontier LLM or agent, or a human, and what share of items that is. An item goes to fallback when any of its questions falls below the threshold, so with several questions per item the share is higher than 1 − coverage of single answers.
 - **Local option:** when an open-weights model is close to the best, say it can run locally from its Hugging Face weights, so the data never leaves the user's machine. That setup is worth it now that the benchmark has shown the model works for their case.
