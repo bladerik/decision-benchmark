@@ -29,6 +29,7 @@ Potom v novom chate napíš: „Chcem otestovať decision modely na mojej úlohe
 - Node.js, ak inštaluješ cez `npx`. Bez neho stačí skopírovať priečinok `decision-benchmark/` medzi skilly svojho agenta.
 - Účet na [OpenRouteri](https://openrouter.ai) s pár eurami kreditu. Samotný test väčšinou stojí pár centov.
 - API kľúč v premennej prostredia `OPENROUTER_API_KEY`. Nevkladaj ho do chatu ani do súborov.
+- Na kľúči nastav limit, napríklad 5 $ s denným resetom (pri vytváraní kľúča na [openrouter.ai/settings/keys](https://openrouter.ai/settings/keys)). Ak by sa niečo zacyklilo, za deň sa minie najviac tento limit. Limit bez resetu stráži celkovú sumu.
 
 ## Citlivé dáta
 

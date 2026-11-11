@@ -1,5 +1,3 @@
-import time
-import json
 """Offline tests for bench.py. Run from this folder: python3 -m unittest"""
 import contextlib, io, json, os, struct, tempfile, threading, time, unittest, urllib.error
 from unittest import mock
@@ -30,8 +28,9 @@ def llm(mid, params=("response_format", "structured_outputs", "max_tokens"), inp
 class FakeAPI:
     """Stands in for bench.http: routes by URL, records every request."""
 
-    def __init__(self, decision_models, all_models=(), on_decision=None, on_chat=None):
+    def __init__(self, decision_models, all_models=(), on_decision=None, on_chat=None, key_info=None):
         self.decision_models, self.all_models = list(decision_models), list(all_models)
+        self.key_info = key_info if key_info is not None else {"limit": 5, "limit_remaining": 4.5, "limit_reset": "daily"}
         self.on_decision, self.on_chat = on_decision, on_chat
         self.posts, self.lock = [], threading.Lock()
 
@@ -40,6 +39,8 @@ class FakeAPI:
             return {"data": self.decision_models}
         if method == "GET" and url == bench.API + "/v1/models":
             return {"data": self.all_models}
+        if method == "GET" and url.endswith("/v1/key"):
+            return {"data": self.key_info}
         if method == "GET" and url.endswith("/v1/credits"):
             return {"data": {"total_credits": 10, "total_usage": 1}}
         with self.lock:
@@ -637,3 +638,24 @@ class Round2SaveTests(Workspace):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+# ---------- key spending limit ----------
+
+class KeyLimitTests(Workspace):
+    def test_models_shows_the_key_limit(self):
+        api = FakeAPI([dm("a/m")])
+        code, out = self.main(api, "models")
+        self.assertIn("$5.00", out)
+        self.assertIn("daily", out)
+        self.assertIn("$4.50 left", out)
+
+    def test_key_without_limit_gets_a_warning_in_models_plan_and_run(self):
+        q, items = self.files(1)
+        none = {"limit": None, "limit_remaining": None, "limit_reset": None}
+        for argv in (("models",), ("plan", q, items, "--models", "a/m"),
+                     ("run", q, items, "--models", "a/m", "--passes", "1", "--max-usd", "1", "--out", self.path("r.json"))):
+            api = FakeAPI([dm("a/m")], on_decision=yes_to_all, key_info=none)
+            code, out = self.main(api, *argv)
+            self.assertIn("no credit limit", out, argv[0])
+            self.assertIn("openrouter.ai/settings/keys", out, argv[0])

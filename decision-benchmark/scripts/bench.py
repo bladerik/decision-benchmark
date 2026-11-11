@@ -96,6 +96,20 @@ def live_models():
     return http("GET", MODELS_URL, auth=False)["data"]
 
 
+def key_note():
+    """One line about the key's own spending limit (GET /api/v1/key), so a runaway loop cannot drain the account."""
+    try:
+        d = http("GET", API + "/v1/key")["data"]
+    except Exception:
+        return "Key limit: unknown (could not read it). Check it at https://openrouter.ai/settings/keys."
+    if d.get("limit") is None:
+        return ("Warning: this key has no credit limit. Create a key for this benchmark with a limit of a few dollars "
+                "that resets daily at https://openrouter.ai/settings/keys.")
+    reset = f" (resets {d['limit_reset']})" if d.get("limit_reset") else ""
+    left = d.get("limit_remaining")
+    return f"Key limit: ${float(d['limit']):.2f}{reset}" + ("" if left is None else f", ${float(left):.2f} left.")
+
+
 def credit():
     try:
         d = http("GET", API + "/v1/credits")["data"]
@@ -786,6 +800,7 @@ def cmd_models(a):
     if os.environ.get("OPENROUTER_API_KEY"):
         c = credit()
         print("\nOPENROUTER_API_KEY is set. Remaining credit: " + ("unknown" if c is None else f"${c:.2f}"))
+        print(key_note())
     else:
         print("\nOPENROUTER_API_KEY is not set.")
 
@@ -859,6 +874,7 @@ def cmd_plan(a):
     if os.environ.get("OPENROUTER_API_KEY"):
         c = credit()
         print("Remaining credit: " + ("unknown" if c is None else f"${c:.2f}"))
+        print(key_note())
 
 
 def save_atomic(res, out):
@@ -897,6 +913,7 @@ def cmd_run(a):
     key()  # a missing or broken key stops here, before any request
     questions, items, models, skipped, baseline, live = prepare(a)
     print_plan(questions, items, models, skipped, baseline, a.passes, live)
+    print(key_note())
     out = a.out or "results.json"
     fp = fingerprint(questions, items)
     by_id = {m["id"]: m for m in models}
